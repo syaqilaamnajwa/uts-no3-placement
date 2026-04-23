@@ -2,15 +2,14 @@ import streamlit as st
 import pandas as pd
 import pickle
 
-
-# PAGE CONFIG
+# page config
 st.set_page_config(
     page_title="Student Career Prediction",
     layout="wide"
 )
 
 
-# LOAD MODEL
+#load model
 @st.cache_resource
 def load_models():
     with open("best_model.pkl", "rb") as f:
@@ -25,7 +24,7 @@ def load_models():
 placement_model, salary_model = load_models()
 
 
-# SIDEBAR
+#sidebar
 st.sidebar.title("Menu")
 
 prediction_mode = st.sidebar.selectbox(
@@ -38,12 +37,12 @@ st.sidebar.write("Model Deployment Project")
 st.sidebar.write("Using Streamlit + Pickle Model")
 
 
-# TITLE
+#title
 st.title("Student Career Prediction")
 st.write("Input student data below to get prediction results.")
 
 
-# FORM INPUT
+#form input
 with st.form("form"):
 
     col1, col2 = st.columns(2)
@@ -67,7 +66,7 @@ with st.form("form"):
     submit = st.form_submit_button("Predict")
 
 
-# PREDICT
+#prediction
 if submit:
 
     input_data = pd.DataFrame([{
@@ -96,7 +95,7 @@ if submit:
         "extracurricular_involvement": None
     }])
 
-    # simple chart
+    #simple chart
     st.subheader("Skill Summary")
 
     chart = pd.DataFrame({
@@ -106,20 +105,40 @@ if submit:
 
     st.bar_chart(chart.set_index("Skill"))
 
-    st.subheader("Result")
+    st.subheader("Prediction Result")
 
+    # predict placement first
+    placement = placement_model.predict(input_data)[0]
+
+    #placement mode
     if prediction_mode == "Placement Prediction":
 
-        result = placement_model.predict(input_data)[0]
-
-        if str(result).lower() == "placed":
+        if str(placement).lower() == "placed":
             st.success("Placed")
         else:
             st.error("Not Placed")
 
+    #salary mode
     else:
 
-        salary = salary_model.predict(input_data)[0]
+        if str(placement).lower() != "placed":
 
-        st.success(f"Estimated Salary: {round(salary,2)} LPA")
-        st.metric("Predicted Salary", f"{round(salary,2)} LPA")
+            st.error("Not Placed")
+            st.warning("Estimated Salary: 0 LPA")
+
+            st.metric(
+                "Predicted Salary",
+                "0 LPA"
+            )
+
+        else:
+
+            salary = salary_model.predict(input_data)[0]
+
+            st.success("Placed")
+            st.success(f"Estimated Salary: {round(salary,2)} LPA")
+
+            st.metric(
+                "Predicted Salary",
+                f"{round(salary,2)} LPA"
+            )
